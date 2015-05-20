@@ -1,0 +1,196 @@
+\documentclass[a4paper, 10pt]{article}
+\usepackage[utf8]{inputenc} % Change according your file encoding
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{times}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{wrapfig}
+\usepackage{hyperref}
+\usepackage{amsmath}
+
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+\usepackage{geometry}
+\geometry{
+	a4paper,
+	total={210mm,297mm},
+	left=30mm,
+	right=30mm,
+	top=20mm,
+	bottom=20mm,
+}
+
+
+%\parskip=1mm
+\definecolor{grey}{rgb}{0.2,0.2,0.2}
+
+\lstset{
+	language=R,
+	basicstyle=\scriptsize\ttfamily,
+	commentstyle=\ttfamily\color{blue},
+	numbers=left,
+	numberstyle=\ttfamily\color{black}\footnotesize,
+	stepnumber=1,
+	numbersep=5pt,
+	backgroundcolor=\color{white},
+	showspaces=false,
+	showstringspaces=false,
+	showtabs=false,
+	frame=single,
+	tabsize=2,
+	captionpos=b,
+	breaklines=true,
+	breakatwhitespace=false,
+	escapeinside={},
+	keywordstyle={},
+	morekeywords={}
+}
+
+
+%opening
+\title{ Decision Trees on Credit Score Data\\ MVA - MIRI}
+\author{Miguel Jose Mossa Yespica}
+\date{\today{}}
+
+\begin{document}
+	
+	\maketitle
+	
+	\section{The Data Set}
+	
+	The Credit Score data set contain 860 observations. There are 23 variables, where 8 could be deal as cathegorical including the response variable "Dictamen" which has two possible levels: "1" and "2". "2" means positive dictum to assign a credit to an individual and "1" means the contrary. The rest of the variables could be deal as continuous,even we are going to deal as continuous the "Edad" variable.
+	
+	
+	\section{Assumptions and previous analysis}
+	
+	The first thing to note is that the data set is clean, because there not exist "NA" values and any outlier apparently.  
+	
+	After read the data set, we are going to define our cathegorical variables:
+	
+	\lstinputlisting[caption= ,language=R]{variablescat.R}
+	
+	In our response variable " Dictamen" we have the following proportion in each class:
+	
+	 \begin{table}[H]
+	 		\centering
+	 	\begin{tabular}{|c||c||c|}
+	 		\hline
+	 			\centering
+	 {\bf Class} & 1 & 2 \\ \hline
+	 {\bf \# Observations } & 231 & 629\\ \hline
+	 {\bf (\%) Proportion } & 26 & 74\\
+	 \hline
+	\end{tabular}
+\end{table}
+
+The first thing to do before apply any data mining technique is split the available data into learning and test sets, selecting randomly 2/3 and 1/3 of the data (We do this for a honest estimation of prediction performance). To do the above we are going to use the following code in R:
+
+\lstinputlisting[caption= ,language=R]{splitdataset.R}
+
+\section{Decision Tree}
+
+To model our data set we are going to use the decision tree technique.In R the library \{rpart\} make to possible use this technique. The idea basically is take our learning data set and build our model based on decision tree.It is important to note that our learning data set has 573 observations, all of them distributed in the response variable " Dictamen" with an approximated proportion like our whole data set ( \% "1"=26 and \% "2"=74).
+
+The next code in R allow us show the result of the tree:
+
+\lstinputlisting[caption= ,language=R]{resultDT.R}
+
+Now, We need to calculate the $\alpha$ parameter which give us the exactly number of splits to get the optimal three.In R we can compute this parameter as is shown in the following code:
+
+\lstinputlisting[caption= ,language=R]{alpha.R}
+
+In this case $ \alpha= 0.0162037 $ , therefore we need to prune our tree when it has 7 splits. In the figure \ref{optimal} is shown the goodness R(T) (cost) using the validation data and the learning data.There, we can observe the $\alpha$ parameter.
+
+ 	\begin{figure}[H]
+ 	\centering 
+ 	\includegraphics[height=0.40\textheight]{Optimal_ValidationTree}
+ 		\caption{\label{optimal}Selection of the optimal tree in $\alpha=0.0162037$.}
+  	\end{figure}
+
+
+The next step is prune our tree using this optimal value.To do this, we are going to use the \textit {prune()} function and then plot the three using the \textit {fancyRpartPlot()} from \{rattle\} package in R.In Figure \ref{optimaltree} is shown the optimal tree after cut the tree.
+
+	\begin{figure}[H]
+		\centering 
+		\includegraphics[height=0.40\textheight]{prunetree}
+		\caption{\label{optimaltree}Optimal tree.}
+	\end{figure}
+
+In Figure \ref{optimaltree}is shown the resulting tree where is possible to detect the positives(2) and negatives(1) rules used for the assignment of the credit score.To obtain the rules we can use the \textit {asRules} function from \{rpart\} package. Then,we get the next rules:\\
+
+{\bf\underline{ Positives:}}
+\begin{description}
+\item [Rule number: 15] (observations=377 (66$\%$) with prob=0.90): Cap\_devol$>=$0.8286, CIM=1 and T\_trabajo={1,3,4}.
+
+\item [Rule number: 29] (observations=11(2$\%$) with prob=0.82): Cap\_devol$>=$0.8286, CIM=1, T\_trabajo={0,2} and Patrimonio$>=$3750.
+ 
+\item [Rule number: 11] (observations=42 (7$\%$) with prob=0.76): Cap\_devol$<$ 0.8286, Patrimonio$>=$3786 and Cargas\_patr$<$ 1050.
+
+\item[ Rule number: 13] (observations=27 (5$\%$) prob=0.70): Cap\_devol$>$=0.8286, CIM=2 and Financiacion$<$ 77.61.
+\end{description}
+
+{\bf\underline{ Negatives:}}
+\begin{description}
+	\item[ Rule number: 10] (observations=12 (2\%) prob=0.33): Cap\_devol$<$ 0.8286, Patrimonio$>=$3786 and Cargas\_patr$>=$1050.
+	
+	\item [Rule number: 12](observations=1 cover=26 (5\%) prob=0.27): Cap\_devol$>=$0.8286, CIM=2 and Financiacion$>=$77.61.
+	
+	\item [Rule number: 4] (observations=57 (10\%) prob=0.26): Cap\_devol$<$ 0.8286 and Patrimonio< 3786.
+	
+	\item[Rule number: 28] (observations=21 (4\%) prob=0.19): Cap\_devol$>=$0.8286, CIM=1, T\_trabajo=0,2 and Patrimonio$<$ 3750.
+\end{description}  
+
+\section{Measuring the prediction error of a tree}
+
+In this section, we are going to show the possible prediction error using test and learning data sets.To do that we can use the \textit{predict} function to predict the error. Consecuently, we are going to calculate the confusion matrix and obtain some measures of error( accuracy,error rate,precision positives,precision negatives,recall).
+
+In R we can do a prediction using our model and then build the confusion matrix with the test and the learning data sets as follow:
+
+\lstinputlisting[caption= ,language=R]{predictandconfmatrix.R}
+
+It is important to note that the threshold taken to choose a class is 50$\%$. Now, we can calculate the different measures of the error and obtain the following results:
+
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{rr}
+		\hline
+		Measure & value  \\ 
+		\hline
+		error\_rate.test & 0.22 \\ 
+		error\_rate.learning & 0.15 \\  
+		accuracy\_positive.test & 0.82 \\ 
+		accuracy\_negative.test & 0.67 \\ 
+		accuracy\_positive.learning & 0.87 \\ 
+		accuracy\_negative.learning & 0.74 \\
+		average\_accuracy.test & 0.74 \\ 
+		average\_accuracy.learning & 0.81 \\ 
+		recall.test & 0.88 \\ 
+		recall.learning & 0.93 \\ 
+		\hline
+	\end{tabular}
+\end{table}
+
+As is shown in the previous table the error in the test data set is 22$\%$. Moreover, the accuracy to predict a positive class is high (82$\%$) and the negative class is less than positive cases(67$\%$). The recall measure is very high in the test data set (88$\%$). Therefore, we can say that this model works to predict credit scores.However,is possible to note a few difference between the learning error rate and recall with respect to test measures. 
+
+
+For each specific rating, we can compute yet another measure of agreement between predicted and actual ratings: ROC curve. In order to build the ROC curve, one needs to vary the classification threshold. That is, the minimum score to classify a customer as "positive". In other words, if the threshold is t, we only classify customers as positive if their" positive" score is greater than or equal to t.In R is possible to get it using \{pROC\} package and the function \textit{roc()}:
+
+\lstinputlisting[caption= ,language=R]{roc.R}
+
+The ROC curve is constructed by plotting the proportion of true positives (sensitivity), versus the proportion of the false positives (specificity), as the threshold varies from 0 to 1.The AUC, as its name indicates, is the area under the ROC curve. The closer the AUC is to 1, the more accurate the classifier (a perfect classifier would have an AUC of 1). In our data set, the AUC seems high enough (0.74).The ROC curve is shown in Figure \ref{roc}).
+ 
+\begin{figure}[H]
+	\centering 
+	\includegraphics[height=0.40\textheight]{ROCplot}
+	\caption{\label{roc}ROC curve.}
+\end{figure}
+
+\section{Conclusions}
+
+Decision tree is a very powerful and useful technique to predict two classes in a classification problem.This technique is straightforward in credit score problems due to that has a easy interpretation. Further, this technique allow you take decisions in financial problems through of rules. 
+
+
+
+\end{document}
